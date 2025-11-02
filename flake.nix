@@ -45,9 +45,22 @@
       # one config entry -- arch auto-detect unless overridden via --system
       nixosConfigurations.default = mkSystem null;
 
-      templates.default = {
-        path = ./.;
-        description = "Portable NixOS anywhere + disko template (ARM/x86 auto)";
+      templates = {
+        default = {
+          path = ./.;
+          description = "Portable NixOS anywhere + disko template (ARM/x86 auto)";
+          welcomeText = ''
+            # NixOS Anywhere + Disko Template
+            
+            This template provides a portable NixOS configuration with automatic
+            architecture detection (ARM/x86_64).
+            
+            Next steps:
+            1. Edit flake.nix to add your SSH public key
+            2. Customize disko.nix for your disk layout
+            3. Deploy with: nixos-anywhere --flake .#default root@your-host
+          '';
+        };
       };
     };
 }
