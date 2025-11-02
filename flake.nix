@@ -44,5 +44,10 @@
     in {
       # one config entry -- arch auto-detect unless overridden via --system
       nixosConfigurations.default = mkSystem null;
+
+      templates.default = {
+        path = ./.;
+        description = "Portable NixOS anywhere + disko template (ARM/x86 auto)";
+      };
     };
 }
