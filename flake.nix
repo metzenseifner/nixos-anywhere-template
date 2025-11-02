@@ -15,7 +15,7 @@
       # helper: default to host if user doesn't pass --system
       mkSystem = targetSystem:
         nixpkgs.lib.nixosSystem {
-          system = targetSystem or hostSystem;
+          system = if targetSystem != null then targetSystem else hostSystem;
           modules = [
             disko.nixosModules.disko
             ./disko.nix
