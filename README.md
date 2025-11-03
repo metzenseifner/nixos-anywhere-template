@@ -1,55 +1,56 @@
-# NixOS Anywhere + Disko Portable Template (x86/ARM / iPad UTM friendly)
+# NixOS Anywhere + Disko Portable Template
 
-This flake installs NixOS remotely using `nixos-anywhere` and partitions disks
-with `disko`. It automatically detects the host CPU architecture and builds for
-that unless overridden.
+Remote NixOS installation with automatic disk partitioning using `nixos-anywhere` and `disko`. Supports multiple architectures via `nix-systems/default-linux`.
 
-✅ Works from macOS ARM → x86  
-✅ Works from x86 → ARM (iPad UTM, Raspberry Pi, ARM VPS)  
+✅ Multi-architecture support (x86_64-linux, aarch64-linux, etc.)  
+✅ Auto-detects build system or specify target explicitly  
 ✅ 2 GiB EFI boot partition  
 ✅ `/dev/vda` default (UTM virtio)  
-
-—
 
 ## Usage
 
 ### Clone
 
 ```bash
-git clone https://github.com/YOURNAME/nixos-anywhere-utm-template my-host
+git clone https://github.com/YOURNAME/nixos-anywhere-template my-host
 cd my-host
 ```
 
 ### Edit your SSH key in flake.nix
 
-nixos-anywhere —flake .#default root@IP
+```bash
+nixos-anywhere --flake .#default root@IP
+```
 
+### Target specific architecture
 
-### Cross-building for ARM (example)
+```bash
+nixos-anywhere --flake .#x86_64-linux root@IP
+nixos-anywhere --flake .#aarch64-linux root@IP
+```
 
-nixos-anywhere —flake .#default —system aarch64-linux root@IP
+### Build locally for validation
 
-### Just build config locally” for sanity checking
-
+```bash
 nix build .#nixosConfigurations.default.config.system.build.toplevel
+```
 
-
-# Requirements
+## Requirements
 
 Target must boot a rescue Linux with:
-	•	UEFI
-	•	/dev/vda
-	•	networking + ssh
+- UEFI
+- `/dev/vda` (or customize in `disko.nix`)
+- Networking + SSH access
+- `cpio` and `libc` installed (for initrd building)
 
-For iPad UTM SE:
-	•	UTM ARM VM
-	•	UEFI boot
-	•	virtio disk
-	•	4–8 GB RAM recommended
+### For iPad UTM:
+- UTM ARM VM with UEFI boot
+- virtio disk
+- 4-8 GB RAM recommended
 
-Changing Disk Layout
+## Customizing Disk Layout
 
-See disko.nix. Examples:
-	•	Btrfs snapshots
-	•	LUKS encryption
-	•	ZFS (ARM WIP)
+Edit `disko.nix` to configure:
+- Btrfs snapshots
+- LUKS encryption
+- Alternative filesystems

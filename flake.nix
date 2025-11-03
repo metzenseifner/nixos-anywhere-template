@@ -1,64 +1,62 @@
 {
-  description = "Portable NixOS anywhere + disko template (ARM/x86 auto)";
+  description = "Portable NixOS anywhere + disko template (ARM/x86)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
     disko.url = "github:nix-community/disko";
     disko.inputs.nixpkgs.follows = "nixpkgs";
+    systems.url = "github:nix-systems/default-linux";
   };
 
-  outputs = { self, nixpkgs, disko, ... }@inputs:
+  outputs = { self, nixpkgs, disko, systems, ... }@inputs:
     let
-      # host architecture we are running the flake on
-      hostSystem = builtins.currentSystem;
+      forEachSystem =
+        f: nixpkgs.lib.genAttrs (import systems) (system: f { inherit system; pkgs = import nixpkgs { inherit system; }; });
 
-      # helper: default to host if user doesn't pass --system
-      mkSystem = targetSystem:
-        nixpkgs.lib.nixosSystem {
-          system = if targetSystem != null then targetSystem else hostSystem;
-          modules = [
-            disko.nixosModules.disko
-            ./disko.nix
-            {
-              # base system settings
-              networking.hostName = "utm-auto";
+      mkConfiguration = system: nixpkgs.lib.nixosSystem {
+        inherit system;
+        modules = [
+          disko.nixosModules.disko
+          ./disko.nix
+          {
+            networking.hostName = "utm-auto";
 
-              boot.loader.systemd-boot.enable = true;
-              boot.loader.efi.canTouchEfiVariables = true;
+            boot.loader.systemd-boot.enable = true;
+            boot.loader.efi.canTouchEfiVariables = true;
 
-              services.openssh.enable = true;
+            services.openssh.enable = true;
 
-              users.users.root.openssh.authorizedKeys.keys = [
-                # 👉 replace with your key
-                "ssh-ed25519 AAAABBBB...yourkey"
-              ];
+            users.users.root.openssh.authorizedKeys.keys = [
+              "ssh-ed25519 AAAABBBB...yourkey"
+            ];
 
-              time.timeZone = "UTC";
-              networking.useDHCP = true;
+            time.timeZone = "UTC";
+            networking.useDHCP = true;
 
-              # bump when upgrading major nixos release
-              system.stateVersion = "24.05";
-            }
-          ];
-        };
+            system.stateVersion = "24.05";
+          }
+        ];
+      };
     in {
-      # one config entry -- arch auto-detect unless overridden via --system
-      nixosConfigurations.default = mkSystem null;
+      nixosConfigurations = forEachSystem ({ system, ... }: mkConfiguration system) // {
+        default = self.nixosConfigurations.${builtins.currentSystem} or self.nixosConfigurations."x86_64-linux";
+      };
 
       templates = {
         default = {
           path = ./.;
-          description = "Portable NixOS anywhere + disko template (ARM/x86 auto)";
+          description = "Portable NixOS anywhere + disko template (ARM/x86)";
           welcomeText = ''
             # NixOS Anywhere + Disko Template
             
-            This template provides a portable NixOS configuration with automatic
-            architecture detection (ARM/x86_64).
+            This template provides portable NixOS configurations for multiple
+            architectures using nix-systems/default-linux.
             
             Next steps:
             1. Edit flake.nix to add your SSH public key
             2. Customize disko.nix for your disk layout
-            3. Deploy with: nixos-anywhere --flake .#default root@your-host
+            3. Deploy: nixos-anywhere --flake .#default root@your-host
+               Or target specific arch: .#x86_64-linux or .#aarch64-linux
           '';
         };
       };
